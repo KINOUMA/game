@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NEON VERSE: ULTIMATE</title>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<style>
+    :root {
+        --bg: #050510;
+        --p1: #00f3ff;
+        --p2: #ff0055;
+        --ui-bg: rgba(10, 10, 20, 0.9);
+        --accent: #ffd700;
+        --font-main: 'Courier New', Courier, monospace;
+    }
+    * { box-sizing: border-box; user-select: none; }
+    body, html {
+        margin: 0; padding: 0; width: 100%; height: 100%;
+        background: var(--bg); overflow: hidden;
+        font-family: var(--font-main); color: white;
+    }
+    canvas { display: block; }
+    
+    /* UI Overlay */
+    #ui-layer {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        display: flex; justify-content: center; align-items: center;
+        pointer-events: none; z-index: 10;
+    }
+    
+    /* Panel Design */
+    .panel {
+        background: var(--ui-bg);
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 40px; border-radius: 4px;
+        box-shadow: 0 0 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.5);
+        text-align: center; pointer-events: auto;
+        backdrop-filter: blur(10px);
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        max-width: 500px; width: 90%;
+        position: relative;
+    }
+    .panel::before {
+        content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
+        background: linear-gradient(45deg, var(--p1), transparent, var(--p2));
+        z-index: -1; border-radius: 6px; animation: borderGlow 3s infinite linear;
+    }
+    @keyframes borderGlow { 0%{filter:hue-rotate(0deg);} 100%{filter:hue-rotate(360deg);} }
+
+    h1 {
+        font-size: 3rem; margin: 0 0 20px 0; letter-spacing: 5px;
+        background: linear-gradient(90deg, #fff, var(--p1));
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        text-transform: uppercase;
+        text-shadow: 0 0 20px var(--p1);
+    }
+
+    /* Controls */
+    .control-row { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+    
+    input[type="text"] {
+        background: rgba(0,0,0,0.5); border: 1px solid #444; color: var(--p1);
+        font-size: 2rem; padding: 10px; width: 140px; text-align: center;
+        letter-spacing: 5px; outline: none; transition: 0.3s;
+        font-family: inherit; font-weight: bold;
+    }
+    input[type="text"]:focus { border-color: var(--p1); box-shadow: 0 0 15px var(--p1); }
+
+    button {
+        background: #111; color: white; border: 1px solid #444;
+        padding: 15px 30px; font-size: 1.2rem; cursor: pointer;
+        text-transform: uppercase; letter-spacing: 2px;
+        transition: 0.2s; position: relative; overflow: hidden;
+        font-family: inherit; font-weight: bold;
+    }
+    button:hover { background: var(--p1); color: #000; box-shadow: 0 0 20px var(--p1); border-color: var(--p1); }
+    button.secondary:hover { background: var(--p2); color: #000; box-shadow: 0 0 20px var(--p2); border-color: var(--p2); }
+
+    /* ID Display & Copy */
+    .id-display-container {
+        display: flex; align-items: center; justify-content: center; gap: 15px;
+        margin: 20px 0; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;
+    }
+    .room-id { font-size: 3.5rem; color: var(--p1); font-weight: bold; letter-spacing: 8px; text-shadow: 0 0 10px var(--p1); }
+    .copy-btn { padding: 10px 15px; font-size: 0.9rem; min-width: 80px; }
+
+    /* Toast Notification */
+    #toast {
+        position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+        background: var(--p1); color: #000; padding: 10px 20px; border-radius: 20px;
+        font-weight: bold; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 100;
+        box-shadow: 0 0 20px var(--p1);
+    }
+
+    /* HUD */
+    #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
+    .hp-container { position: absolute; top: 30px; width: 40%; height: 10px; background: rgba(255,255,255,0.1); }
+    .hp-bar { width: 100%; height: 100%; transition: width 0.1s; position: relative; }
+    .hp-bar::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 2px; background: white; box-shadow: 0 0 10px white; }
+    
+    #p1-hp-con { left: 20px; transform: skewX(-20deg); border: 1px solid var(--p1); }
+    #p1-hp { background: var(--p1); box-shadow: 0 0 15px var(--p1); }
+    
+    #p2-hp-con { right: 20px; transform: skewX(20deg); border: 1px solid var(--p2); }
+    #p2-hp { background: var(--p2); box-shadow: 0 0 15px var(--p2); float: right; }
+
+    .score {
+        position: absolute; top: 20px; width: 100%; text-align: center;
+        font-size: 3rem; font-weight: bold; text-shadow: 0 0 20px rgba(255,255,255,0.3);
+    }
+    
+    .status-text {
+        position: absolute; top: 45%; width: 100%; text-align: center;
+        font-size: 4rem; font-weight: 900; letter-spacing: 10px;
+        text-shadow: 0 0 30px white; opacity: 0; transform: scale(0.5);
+        transition: opacity 0.3s, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    /* Tutorial */
+    .tutorial { margin-top: 20px; font-size: 0.85rem; color: #888; line-height: 1.6; text-align: left; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 5px; }
+    .key { color: var(--p1); border: 1px solid #555; padding: 1px 5px; border-radius: 3px; font-weight: bold; }
+    .key.right { color: var(--p2); }
+
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="ui-layer">
+    <div id="menu" class="panel">
+        <h1>Neon Verse<br><span style="font-size:1.5rem;color:white;">ULTIMATE</span></h1>
+        
+        <div id="main-controls">
+            <button onclick="Game.host()" style="width:100%; margin-bottom:15px;">HOST GAME (部屋作成)</button>
+            <div style="font-size:0.9rem; margin:10px 0; opacity:0.7;">- OR -</div>
+            <div class="control-row">
+                <input type="text" id="join-id" placeholder="ID" maxlength="4" pattern="\d*">
+                <button class="secondary" onclick="Game.join()">JOIN (参加)</button>
+            </div>
+        </div>
+
+        <div id="lobby-controls" style="display:none;">
+            <p style="color:#aaa; font-size:0.9rem;">WAITING FOR CHALLENGER...</p>
+            <div class="id-display-container">
+                <div id="room-display" class="room-id">----</div>
+                <button class="copy-btn" onclick="UI.copyID()">COPY</button>
+            </div>
+            <p style="font-size:0.8rem; color:#666;">このIDを対戦相手に伝えてください</p>
+            <button class="secondary" onclick="location.reload()" style="margin-top:20px; font-size:0.8rem;">CANCEL</button>
+        </div>
+
+        <div class="tutorial">
+            <div><span class="key">WASD</span> 移動 (Move)</div>
+            <div><span class="key">L-Click</span> 射撃 (Shoot)</div>
+            <div><span class="key">Space</span> ダッシュ (Dash / 無敵)</div>
+            <div><span class="key right">R-Click</span> パリィ (Parry / 弾き返し)</div>
+        </div>
+        <div id="msg" style="margin-top:15px; color:#ff5555; height:20px; font-size:0.9rem;"></div>
+    </div>
+
+    <div id="hud">
+        <div id="p1-hp-con" class="hp-container"><div id="p1-hp" class="hp-bar"></div></div>
+        <div id="p2-hp-con" class="hp-container"><div id="p2-hp" class="hp-bar"></div></div>
+        <div class="score"><span style="color:var(--p1)">0</span> - <span style="color:var(--p2)">0</span></div>
+        <div id="game-status" class="status-text">ROUND 1</div>
+    </div>
+</div>
+
+<div id="toast">ID COPIED!</div>
+
+<script>
+/**
+ * NEON VERSE: ULTIMATE
+ * Single File Game Engine
+ */
+
+// --- MATH UTILS ---
+const V2 = {
+    add: (v1, v2) => ({ x: v1.x + v2.x, y: v1.y + v2.y }),
+    sub: (v1, v2) => ({ x: v1.x - v2.x, y: v1.y - v2.y }),
+    mult: (v, s) => ({ x: v.x * s, y: v.y * s }),
+    mag: (v) => Math.sqrt(v.x * v.x + v.y * v.y),
+    norm: (v) => {
+        const m = Math.sqrt(v.x * v.x + v.y * v.y);
+        return m === 0 ? { x: 0, y: 0 } : { x: v.x / m, y: v.y / m };
+    },
+    dist: (v1, v2) => Math.sqrt((v1.x - v2.x) ** 2 + (v1.y - v2.y) ** 2),
+    angle: (v1, v2) => Math.atan2(v2.y - v1.y, v2.x - v1.x),
+    lerp: (a, b, t) => a + (b - a) * t
+};
+
+// --- AUDIO ENGINE (Procedural) ---
+class AudioSynth {
+    constructor() {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        this.master = this.ctx.createGain();
+        this.master.gain.value = 0.3;
+        this.master.connect(this.ctx.destination);
+    }
+
+    playTone(freq, type, duration, vol = 1) {
+        if(this.ctx.state === 'suspended') this.ctx.resume();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.1, this.ctx.currentTime + duration);
+        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(this.master);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+    }
+
+    playNoise(duration) {
+        if(this.ctx.state === 'suspended') this.ctx.resume();
+        const bufferSize = this.ctx.sampleRate * duration;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+        noise.connect(gain);
+        gain.connect(this.master);
+        noise.start();
+    }
+
+    sfxShoot() { this.playTone(600, 'square', 0.1, 0.3); }
+    sfxHit() { this.playNoise(0.1); }
+    sfxParry() { this.playTone(1200, 'sine', 0.3, 0.8); }
+    sfxDash() { this.playTone(200, 'triangle', 0.2, 0.4); }
+    sfxWin() { 
+        setTimeout(()=>this.playTone(440, 'sine', 0.2), 0);
+        setTimeout(()=>this.playTone(554, 'sine', 0.2), 200);
+        setTimeout(()=>this.playTone(659, 'sine', 0.4), 400);
+    }
+}
+
+// --- CONSTANTS ---
+const CFG = {
+    w: 1280, h: 720,
+    fps: 60,
+    pRadius: 18,
+    moveSpeed: 5,
+    dashSpeed: 14,
+    dashTime: 12,
+    dashCool: 60,
+    parryTime: 15,
+    parryCool: 90,
+    parryRadius: 50,
+    bulletSpeed: 14,
+    bulletLife: 120,
+    colors: { p1: '#00f3ff', p2: '#ff0055', bg: '#050510' }
+};
+
+// --- GAME CLASSES ---
+class Entity {
+    constructor(x, y, color) {
+        this.pos = {x, y};
+        this.vel = {x: 0, y: 0};
+        this.color = color;
+        this.dead = false;
+    }
+}
+
+class Particle extends Entity {
+    constructor(x, y, color, speed, life) {
+        super(x, y, color);
+        const a = Math.random() * Math.PI * 2;
+        const s = Math.random() * speed;
+        this.vel = {x: Math.cos(a)*s, y: Math.sin(a)*s};
+        this.life = life;
+        this.maxLife = life;
+        this.size = Math.random() * 3 + 1;
+    }
+    update() {
+        this.pos = V2.add(this.pos, this.vel);
+        this.life--;
+        this.vel = V2.mult(this.vel, 0.95);
+        if(this.life <= 0) this.dead = true;
+    }
+    draw(ctx) {
+        ctx.globalAlpha = this.life / this.maxLife;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.pos.x, this.pos.y, this.size, 0, Math.PI*2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+}
+
+class Bullet extends Entity {
+    constructor(x, y, angle, owner, type = 'normal') {
+        super(x, y, owner === 0 ? CFG.colors.p1 : CFG.colors.p2);
+        this.vel = {x: Math.cos(angle)*CFG.bulletSpeed, y: Math.sin(angle)*CFG.bulletSpeed};
+        this.owner = owner;
+        this.life = CFG.bulletLife;
+        this.type = type;
+        this.reflected = false;
+    }
+    update() {
+        this.pos = V2.add(this.pos, this.vel);
+        this.life--;
+        // Wall Bounce
+        if(this.pos.x < 0 || this.pos.x > CFG.w) { this.vel.x *= -1; this.life -= 20; Game.sfx.playNoise(0.05); }
+        if(this.pos.y < 0 || this.pos.y > CFG.h) { this.vel.y *= -1; this.life -= 20; Game.sfx.playNoise(0.05); }
+        if(this.life <= 0) this.dead = true;
+    }
+    draw(ctx) {
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = this.color;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(this.pos.x, this.pos.y, 4, 0, Math.PI*2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+}
+
+class Player extends Entity {
+    constructor(id, x, y, color) {
+        super(x, y, color);
+        this.id = id;
+        this.hp = 100;
+        this.angle = 0;
+        // States
+        this.cooldowns = { dash: 0, parry: 0, shoot: 0 };
+        this.timers = { dash: 0, parry: 0 };
+        this.weapon = 'normal';
+    }
+
+    update(input) {
+        // Cooldowns
+        for(let k in this.cooldowns) if(this.cooldowns[k] > 0) this.cooldowns[k]--;
+        for(let k in this.timers) if(this.timers[k] > 0) this.timers[k]--;
+
+        // Action: Dash
+        if(input.dash && this.cooldowns.dash === 0) {
+            this.timers.dash = CFG.dashTime;
+            this.cooldowns.dash = CFG.dashCool;
+            Game.sfx.sfxDash();
+        }
+
+        // Action: Parry
+        if(input.parry && this.cooldowns.parry === 0) {
+            this.timers.parry = CFG.parryTime;
+            this.cooldowns.parry = CFG.parryCool;
+            Game.sfx.sfxParry();
+        }
+
+        // Movement
+        const speed = this.timers.dash > 0 ? CFG.dashSpeed : CFG.moveSpeed;
+        if(input.move.x !== 0 || input.move.y !== 0) {
+            this.pos.x += input.move.x * speed;
+            this.pos.y += input.move.y * speed;
+            // Bounds
+            this.pos.x = Math.max(20, Math.min(CFG.w - 20, this.pos.x));
+            this.pos.y = Math.max(20, Math.min(CFG.h - 20, this.pos.y));
+        }
+
+        // Angle
+        this.angle = input.angle;
+
+        // Visual Trail
+        if(this.timers.dash > 0) {
+            Game.particles.push(new Particle(this.pos.x, this.pos.y, this.color, 2, 10));
+        }
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.pos.x, this.pos.y);
+        
+        // Parry Shield Visual
+        if(this.timers.parry > 0) {
+            ctx.beginPath();
+            ctx.arc(0, 0, CFG.parryRadius, 0, Math.PI*2);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = Math.random() * 0.5 + 0.5;
+            ctx.stroke();
+            ctx.fillStyle = this.color;
+            ctx.globalAlpha = 0.2;
+            ctx.fill();
+        }
+
+        ctx.rotate(this.angle);
+        ctx.globalAlpha = 1;
+        
+        // Body
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = this.color;
+        ctx.fillStyle = this.color;
+        
+        // Triangle Ship
+        ctx.beginPath();
+        ctx.moveTo(20, 0);
+        ctx.lineTo(-15, 15);
+        ctx.lineTo(-10, 0);
+        ctx.lineTo(-15, -15);
+        ctx.closePath();
+        ctx.fill();
+
+        // Engine
+        if(this.timers.dash > 0) {
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.moveTo(-15, 0);
+            ctx.lineTo(-35 - Math.random()*10, 0);
+            ctx.stroke();
+        }
+
+        ctx.restore();
+        ctx.shadowBlur = 0;
+    }
+}
+
+// --- GAME ENGINE ---
+const Game = {
+    canvas: null, ctx: null,
+    sfx: new AudioSynth(),
+    running: false,
+    isHost: false,
+    net: null, // Network Interface
+    
+    // State
+    players: [],
+    bullets: [],
+    particles: [],
+    camShake: 0,
+    scores: [0, 0],
+    
+    // Inputs
+    keys: {},
+    mouse: { x: 0, y: 0 },
+    inputState: { move: {x:0, y:0}, angle: 0, dash: false, shoot: false, parry: false },
+
+    init() {
+        this.canvas = document.getElementById('game');
+        this.ctx = this.canvas.getContext('2d');
+        this.resize();
+        window.addEventListener('resize', ()=>this.resize());
+        
+        // Input Binding
+        window.addEventListener('keydown', e => this.keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keyup', e => {
+            this.keys[e.key.toLowerCase()] = false;
+            if(e.code === 'Space') this.inputState.dash = false; 
+        });
+        window.addEventListener('mousemove', e => {
+            const rect = this.canvas.getBoundingClientRect();
+            const scaleX = this.canvas.width / rect.width;
+            const scaleY = this.canvas.height / rect.height;
+            this.mouse.x = (e.clientX - rect.left) * scaleX;
+            this.mouse.y = (e.clientY - rect.top) * scaleY;
+        });
+        window.addEventListener('mousedown', e => {
+            if(e.button === 0) this.inputState.shoot = true;
+            if(e.button === 2) this.inputState.parry = true;
+        });
+        window.addEventListener('mouseup', e => {
+            if(e.button === 0) this.inputState.shoot = false;
+            if(e.button === 2) this.inputState.parry = false;
+        });
+        window.addEventListener('contextmenu', e => e.preventDefault());
+
+        this.loop();
+    },
+
+    resize() {
+        // Keep aspect ratio 16:9
+        let w = window.innerWidth;
+        let h = window.innerHeight;
+        if(w/h > 16/9) w = h * 16/9;
+        else h = w * 9/16;
+        
+        // Internal Resolution
+        this.canvas.width = CFG.w;
+        this.canvas.height = CFG.h;
+        
+        // Display Size
+        this.canvas.style.width = w + 'px';
+        this.canvas.style.height = h + 'px';
+    },
+
+    host() {
+        const id = Math.floor(1000 + Math.random()*9000);
+        UI.showLobby(id);
+        this.isHost = true;
+        this.net = new Network(id, true);
+    },
+
+    join() {
+        const id = document.getElementById('join-id').value;
+        if(id.length !== 4) return UI.msg("4桁のIDを入力してください");
+        this.isHost = false;
+        UI.msg("接続中...");
+        this.net = new Network(id, false);
+    },
+
+    startMatch() {
+        this.running = true;
+        this.players = [
+            new Player(0, 100, CFG.h/2, CFG.colors.p1),
+            new Player(1, CFG.w-100, CFG.h/2, CFG.colors.p2)
+        ];
+        this.bullets = [];
+        this.particles = [];
+        UI.hideMenu();
+        UI.showStatus("FIGHT!");
+    },
+
+    update() {
+        if(!this.running) return;
+
+        // --- LOCAL INPUT ---
+        const myId = this.isHost ? 0 : 1;
+        const p = this.players[myId];
+        
+        let dx = 0, dy = 0;
+        if(this.keys['w']) dy = -1;
+        if(this.keys['s']) dy = 1;
+        if(this.keys['a']) dx = -1;
+        if(this.keys['d']) dx = 1;
+        if(dx!=0 && dy!=0) { const l = Math.sqrt(dx*dx+dy*dy); dx/=l; dy/=l; }
+        
+        this.inputState.move = {x: dx, y: dy};
+        this.inputState.angle = Math.atan2(this.mouse.y - p.pos.y, this.mouse.x - p.pos.x);
+        
+        // Trigger Dash (Edge trigger logic in KeyUp)
+        if(this.keys[' ']) this.inputState.dash = true; 
+        // Trigger Parry handled by MouseDown
+
+        // --- UPDATE LOCAL PLAYER ---
+        p.update(this.inputState);
+
+        // Shooting
+        if(this.inputState.shoot && p.cooldowns.shoot === 0) {
+            this.spawnBullet(p.pos.x, p.pos.y, p.angle, myId);
+            p.cooldowns.shoot = 8; // Fire rate
+            this.camShake = 2;
+            this.sfx.sfxShoot();
+        }
+
+        // --- NETWORK SYNC SEND ---
+        this.net.send({
+            t: 's', // state
+            x: p.pos.x, y: p.pos.y, a: p.angle,
+            d: p.timers.dash > 0, // is dashing
+            pr: p.timers.parry > 0, // is parrying
+            hp: p.hp
+        });
+
+        // --- BULLETS & COLLISION ---
+        for(let i=this.bullets.length-1; i>=0; i--) {
+            let b = this.bullets[i];
+            b.update();
+            
+            // Check Collision with Players
+            // Can hit enemy OR self (if reflected)
+            const targetId = b.owner === 0 ? 1 : 0;
+            const target = this.players[targetId];
+            
+            // Parry Check
+            if(target.timers.parry > 0) {
+                const dist = V2.dist(b.pos, target.pos);
+                if(dist < CFG.parryRadius) {
+                    // REFLECT!
+                    b.owner = targetId;
+                    b.vel = V2.mult(b.vel, -1.5); // Speed up
+                    b.color = target.color;
+                    b.reflected = true;
+                    this.sfx.sfxParry();
+                    this.addShockwave(target.pos.x, target.pos.y, target.color);
+                    continue; // Skip hit check
+                }
+            }
+
+            // Hit Check
+            if(V2.dist(b.pos, target.pos) < CFG.pRadius) {
+                if(target.timers.dash > 0) {
+                    // Dodge (Miss)
+                } else {
+                    // HIT
+                    b.dead = true;
+                    this.particleBurst(b.pos.x, b.pos.y, target.color);
+                    this.sfx.sfxHit();
+                    
+                    // Only Host manages HP authority for simplicity, 
+                    // but for visual feedback we decrease locally too
+                    if(this.isHost) {
+                        const dmg = b.reflected ? 20 : 10;
+                        target.hp -= dmg;
+                        this.net.send({ t: 'hit', id: targetId, hp: target.hp });
+                        this.checkWin();
+                    }
+                }
+            }
+            if(b.dead) this.bullets.splice(i, 1);
+        }
+
+        // --- PARTICLES ---
+        this.particles.forEach(p => p.update());
+        this.particles = this.particles.filter(p => !p.dead);
+
+        // Camera Shake Decay
+        this.camShake *= 0.9;
+        if(this.camShake < 0.5) this.camShake = 0;
+    },
+
+    spawnBullet(x, y, angle, owner) {
+        this.bullets.push(new Bullet(x, y, angle, owner));
+        // Also send spawn event if needed, but 'state' sync is usually enough for movement.
+        // For precise bullets, we send an event.
+        this.net.send({ t: 'b', x, y, a: angle, o: owner });
+    },
+
+    particleBurst(x, y, color) {
+        for(let i=0; i<15; i++) this.particles.push(new Particle(x, y, color, 6, 20));
+        this.camShake = 8;
+    },
+
+    addShockwave(x, y, color) {
+        // Simple visual shockwave using particles
+        for(let i=0; i<20; i++) {
+            let p = new Particle(x, y, color, 8, 15);
+            p.vel = V2.mult(p.vel, 2); 
+            this.particles.push(p);
+        }
+    },
+
+    checkWin() {
+        if(this.players[0].hp <= 0 || this.players[1].hp <= 0) {
+            this.running = false;
+            const winner = this.players[0].hp > 0 ? 0 : 1;
+            this.scores[winner]++;
+            UI.showStatus(winner === 0 ? "BLUE WINS" : "RED WINS");
+            this.sfx.sfxWin();
+            
+            setTimeout(() => {
+                this.net.send({ t: 'reset' });
+                this.resetRound();
+            }, 3000);
+        }
+    },
+
+    resetRound() {
+        this.players[0].pos = {x: 100, y: CFG.h/2};
+        this.players[0].hp = 100;
+        this.players[1].pos = {x: CFG.w-100, y: CFG.h/2};
+        this.players[1].hp = 100;
+        this.bullets = [];
+        this.running = true;
+        UI.updateHP(100, 100);
+        UI.updateScore();
+        UI.hideStatus();
+    },
+
+    draw() {
+        requestAnimationFrame(() => this.loop());
+        
+        // Shake Offset
+        const sx = (Math.random()-0.5)*this.camShake;
+        const sy = (Math.random()-0.5)*this.camShake;
+
+        this.ctx.save();
+        this.ctx.translate(sx, sy);
+
+        // Clear & BG
+        this.ctx.fillStyle = CFG.colors.bg;
+        this.ctx.fillRect(0, 0, CFG.w, CFG.h);
+        
+        // Grid
+        this.ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+        this.ctx.lineWidth = 1;
+        for(let i=0; i<CFG.w; i+=50) { this.ctx.beginPath(); this.ctx.moveTo(i,0); this.ctx.lineTo(i,CFG.h); this.ctx.stroke(); }
+        for(let i=0; i<CFG.h; i+=50) { this.ctx.beginPath(); this.ctx.moveTo(0,i); this.ctx.lineTo(CFG.w,i); this.ctx.stroke(); }
+
+        // Draw Entities
+        this.particles.forEach(p => p.draw(this.ctx));
+        this.bullets.forEach(b => b.draw(this.ctx));
+        this.players.forEach(p => p.draw(this.ctx));
+
+        // Chromatic Aberration Effect on Hit
+        if(this.camShake > 2) {
+            const idata = this.ctx.getImageData(0,0,CFG.w, CFG.h);
+            // Simulate simply by drawing again with offset and blend mode in real engine, 
+            // but here we just keep it simple with the shake.
+        }
+
+        this.ctx.restore();
+    },
+
+    loop() {
+        this.update();
+        this.draw();
+    },
+
+    // Handle Network Message
+    onNetData(d) {
+        if(d.t === 's') { // State update
+            const enemyId = this.isHost ? 1 : 0;
+            const p = this.players[enemyId];
+            if(p) {
+                // Smooth Lerp
+                p.pos.x = V2.lerp(p.pos.x, d.x, 0.5);
+                p.pos.y = V2.lerp(p.pos.y, d.y, 0.5);
+                p.angle = d.a;
+                p.timers.dash = d.d ? 10 : 0;
+                p.timers.parry = d.pr ? 10 : 0;
+                // We don't overwrite HP from state to avoid jitter, handle via event
+            }
+        }
+        else if(d.t === 'b') { // Bullet Spawn (Remote)
+            // Avoid duplicating local bullets
+            if(d.o !== (this.isHost ? 0 : 1)) {
+               // Sent by enemy, so it's enemy's bullet
+               this.spawnBullet(d.x, d.y, d.a, d.o);
+            }
+        }
+        else if(d.t === 'hit') {
+            const p = this.players[d.id];
+            if(p) {
+                p.hp = d.hp;
+                UI.updateHP(this.players[0].hp, this.players[1].hp);
+            }
+        }
+        else if(d.t === 'reset') {
+            this.resetRound();
+        }
+    }
+};
+
+// --- NETWORK WRAPPER ---
+const PEER_PREFIX = 'neon-v2-';
+class Network {
+    constructor(idStr, isHost) {
+        this.conn = null;
+        this.peer = new Peer(isHost ? PEER_PREFIX+idStr : null);
+        
+        this.peer.on('open', (id) => {
+            if(!isHost) {
+                // Connect to host
+                const conn = this.peer.connect(PEER_PREFIX+idStr);
+                this.setupConn(conn);
+            }
+        });
+
+        this.peer.on('connection', (conn) => {
+            this.setupConn(conn);
+        });
+
+        this.peer.on('error', (err) => {
+            console.error(err);
+            UI.msg("接続エラー (IDを確認してください)");
+        });
+    }
+
+    setupConn(conn) {
+        this.conn = conn;
+        this.conn.on('open', () => {
+            Game.startMatch();
+        });
+        this.conn.on('data', (d) => Game.onNetData(d));
+    }
+
+    send(data) {
+        if(this.conn && this.conn.open) this.conn.send(data);
+    }
+}
+
+// --- UI MANAGER ---
+const UI = {
+    showLobby(id) {
+        document.getElementById('main-controls').style.display = 'none';
+        document.getElementById('lobby-controls').style.display = 'block';
+        document.getElementById('room-display').innerText = id;
+    },
+    hideMenu() {
+        document.getElementById('ui-layer').style.pointerEvents = 'none';
+        document.getElementById('menu').style.opacity = 0;
+        setTimeout(()=>document.getElementById('menu').style.display='none', 300);
+        document.getElementById('hud').style.display = 'block';
+    },
+    showStatus(text) {
+        const el = document.getElementById('game-status');
+        el.innerText = text;
+        el.style.opacity = 1;
+        el.style.transform = 'scale(1)';
+    },
+    hideStatus() {
+        const el = document.getElementById('game-status');
+        el.style.opacity = 0;
+        el.style.transform = 'scale(0.5)';
+    },
+    updateHP(hp1, hp2) {
+        document.getElementById('p1-hp').style.width = Math.max(0, hp1) + '%';
+        document.getElementById('p2-hp').style.width = Math.max(0, hp2) + '%';
+    },
+    updateScore() {
+        document.querySelector('.score').innerHTML = 
+            `<span style="color:var(--p1)">${Game.scores[0]}</span> - <span style="color:var(--p2)">${Game.scores[1]}</span>`;
+    },
+    msg(txt) { document.getElementById('msg').innerText = txt; },
+    
+    copyID() {
+        const id = document.getElementById('room-display').innerText;
+        navigator.clipboard.writeText(id).then(() => {
+            const t = document.getElementById('toast');
+            t.style.opacity = 1; t.style.bottom = '50px';
+            setTimeout(() => { t.style.opacity = 0; t.style.bottom = '30px'; }, 2000);
+        });
+    }
+};
+
+// Boot
+window.onload = () => Game.init();
+
+</script>
+</body>
+</html>
