@@ -1,16 +1,16 @@
 // --- グローバル変数 ---
 let peer = null;
 let conn = null;
-let myColor = null;       // 'black' or 'white'
-let currentTurn = 'black';
-let boardState = [];
-let hands = { black: {}, white: {} };
-let selectedCell = null;  // {x,y} または {isHand, type, color}
-let pendingMove = null;
-let lastMovePos = null;
-let gameActive = false;
+let myColor = null;        // 'black' (先手) or 'white' (後手)
+let currentTurn = 'black'; // 常に先手から開始
+let boardState = [];       // 9x9配列
+let hands = { black: {}, white: {} }; // 持ち駒
+let selectedCell = null;   // 選択状態
+let pendingMove = null;    // 成り判定用
+let lastMovePos = null;    // 直前の手
+let gameActive = false;    // ゲーム進行中フラグ
 
-// --- 駒定義 ---
+// --- 駒の定義 ---
 const pieceDefs = {
     'P': { name: '歩', pro: 'と', canPro: true },
     'L': { name: '香', pro: '杏', canPro: true },
@@ -22,6 +22,7 @@ const pieceDefs = {
     'K': { name: '王', pro: null, canPro: false }
 };
 
+// 初期配置 (0行目が後手側, 8行目が先手側)
 const initialPlacement = [
     ['L', 'N', 'S', 'G', 'K', 'G', 'S', 'N', 'L'], 
     [' ', 'R', ' ', ' ', ' ', ' ', ' ', 'B', ' '], 
@@ -36,12 +37,13 @@ const initialPlacement = [
 
 // --- 初期化 ---
 window.onload = () => {
+    // モーダルボタン
     document.getElementById('btn-promote-yes').onclick = () => resolvePromotion(true);
     document.getElementById('btn-promote-no').onclick = () => resolvePromotion(false);
 };
 
-// --- 通信 (PeerJS) ---
-const PREFIX = 'shogi_v4_'; 
+// --- PeerJS 通信処理 ---
+const PREFIX = 'shogi_full_v1_'; 
 
 function log(msg) { document.getElementById('msg-log').innerText = msg; }
 
@@ -61,7 +63,7 @@ function setupPeer(id, isHost, targetId = null) {
     if (peer) peer.destroy();
     peer = id ? new Peer(id) : new Peer();
 
-    log(isHost ? '部屋作成中...' : '接続中...');
+    log(isHost ? '部屋を作成中...' : '接続中...');
 
     peer.on('open', (myId) => {
         if (isHost) {
@@ -89,6 +91,7 @@ function setupPeer(id, isHost, targetId = null) {
 function setupConnection(isHost) {
     conn.on('open', () => {
         if (isHost) {
+            // ホストが先手後手をランダム決定
             const hostColor = Math.random() < 0.5 ? 'black' : 'white';
             myColor = hostColor;
             conn.send({ type: 'init', color: hostColor === 'black' ? 'white' : 'black' });
@@ -108,8 +111,8 @@ function setupConnection(isHost) {
     });
 
     conn.on('close', () => {
-        if(gameActive) alert('切断されました');
-        resetGame();
+        if(gameActive) alert('相手が切断しました');
+        location.reload();
     });
 }
 
@@ -120,14 +123,15 @@ function toggleInputs(enable) {
     document.querySelectorAll('.btn').forEach(b => b.disabled = !enable);
 }
 
-// --- ゲーム進行 ---
+// --- ゲームコア処理 ---
+
 function startGame() {
     gameActive = true;
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('game-screen').style.display = 'flex';
     document.getElementById('player-info').innerText = `あなたは ${myColor==='black'?'先手(▲)':'後手(△)'}`;
     
-    // 盤面初期化
+    // 盤面と持ち駒の初期化
     boardState = Array(9).fill(null).map(() => Array(9).fill(null));
     hands = { black: {}, white: {} };
     Object.keys(pieceDefs).forEach(k => { hands.black[k]=0; hands.white[k]=0; });
@@ -138,6 +142,7 @@ function startGame() {
             if(c !== ' ') boardState[y][x] = { type: c, owner: y<=2?'white':'black', promoted: false };
         }
     }
+    
     render();
     updateStatus();
 }
@@ -147,69 +152,69 @@ function resetGame() { location.reload(); }
 function updateStatus() {
     const el = document.getElementById('turn-indicator');
     const isMyTurn = currentTurn === myColor;
-    el.innerText = isMyTurn ? 'あなたの番' : '相手の番';
+    el.innerText = isMyTurn ? 'あなたの番です' : '相手の番です';
     el.className = 'turn-badge ' + (isMyTurn ? 'my-turn' : '');
 }
 
 // --- 描画ロジック ---
+
 function render() {
     const boardEl = document.getElementById('board');
     boardEl.innerHTML = '';
     
-    // 後手なら盤面回転
     if(myColor === 'white') boardEl.classList.add('board-rotated');
 
-    // 移動可能マスを計算（選択中の場合）
+    // 移動可能/打てる場所の計算
     let validMoves = [];
     if (selectedCell && gameActive && currentTurn === myColor) {
         if (selectedCell.isHand) {
-            // 持ち駒の打ち場所計算
             validMoves = getValidDrops(selectedCell.type);
         } else {
-            // 盤上の駒の移動場所計算
             validMoves = getValidMoves(selectedCell.x, selectedCell.y);
         }
     }
 
+    // 盤面生成
     for (let y = 0; y < 9; y++) {
         for (let x = 0; x < 9; x++) {
             const cell = document.createElement('div');
             cell.className = 'cell';
             
-            // 座標データを持たせる
-            cell.dataset.x = x;
-            cell.dataset.y = y;
-
-            // ハイライト処理
+            // ハイライト
             if (selectedCell && !selectedCell.isHand && selectedCell.x === x && selectedCell.y === y) {
                 cell.classList.add('selected');
             }
             if (lastMovePos && lastMovePos.toX === x && lastMovePos.toY === y) {
                 cell.classList.add('last-move');
             }
-            
+
             // ガイド表示
             const isValid = validMoves.some(m => m.x === x && m.y === y);
             if (isValid) {
-                if (selectedCell.isHand) cell.classList.add('valid-drop');
+                if(selectedCell.isHand) cell.classList.add('valid-drop');
                 else cell.classList.add('valid-move');
             }
 
+            // クリックイベント
             cell.onclick = () => onCellClick(x, y);
 
             const p = boardState[y][x];
             if (p) {
                 const div = document.createElement('div');
                 div.className = `piece ${p.owner} ${p.promoted?'promoted':''}`;
+                
                 let txt = p.promoted ? pieceDefs[p.type].pro : pieceDefs[p.type].name;
-                // 玉と王の出し分け
+                // 玉・王の出し分け
                 if(p.type === 'K' && !p.promoted) txt = p.owner==='black' ? '玉' : '王';
+                
                 div.innerText = txt;
                 cell.appendChild(div);
             }
             boardEl.appendChild(cell);
         }
     }
+
+    // 持ち駒描画
     renderHand('komadai-self', myColor);
     renderHand('komadai-opponent', myColor==='black'?'white':'black');
 }
@@ -222,37 +227,45 @@ function renderHand(id, color) {
     Object.keys(hands[color]).forEach(type => {
         const count = hands[color][type];
         if (count > 0) {
-            const div = document.createElement('div');
-            div.className = `hand-piece piece ${color}`;
-            if(myColor === 'white' && color === 'black') div.style.transform = 'rotate(180deg)';
-            if(myColor === 'black' && color === 'white') div.style.transform = 'rotate(180deg)';
-
+            const slot = document.createElement('div');
+            slot.className = 'hand-slot';
+            
             if (isMine && selectedCell && selectedCell.isHand && selectedCell.type === type) {
-                div.classList.add('selected');
+                slot.classList.add('selected');
             }
 
+            const div = document.createElement('div');
+            div.className = `piece ${color}`;
+            if(myColor === 'white' && color === 'black') div.style.transform = 'rotate(180deg)';
+            if(myColor === 'black' && color === 'white') div.style.transform = 'rotate(180deg)';
             div.innerText = pieceDefs[type].name;
+            
+            slot.appendChild(div);
+
             if (count > 1) {
                 const badge = document.createElement('span');
                 badge.className = 'count-badge';
                 badge.innerText = count;
-                div.appendChild(badge);
+                slot.appendChild(badge);
             }
 
             if (isMine) {
-                div.onclick = (e) => {
+                slot.onclick = (e) => {
                     e.stopPropagation();
                     onHandClick(type);
                 };
             }
-            container.appendChild(div);
+            container.appendChild(slot);
         }
     });
 }
 
-// --- 入力ハンドラ ---
+// --- クリックハンドリング ---
+
 function onHandClick(type) {
     if (!gameActive || myColor !== currentTurn) return;
+    
+    // 同じ駒を選んだら解除
     if (selectedCell && selectedCell.isHand && selectedCell.type === type) {
         selectedCell = null;
     } else {
@@ -266,10 +279,9 @@ function onCellClick(x, y) {
 
     const target = boardState[y][x];
 
-    // 1. 持ち駒選択中 -> 打つ
+    // 1. 持ち駒を選択している場合 -> 打つ
     if (selectedCell && selectedCell.isHand) {
         if (!target) {
-            // 打てるかチェック
             const drops = getValidDrops(selectedCell.type);
             if (drops.some(d => d.x === x && d.y === y)) {
                 executeDrop(selectedCell.type, x, y);
@@ -278,16 +290,18 @@ function onCellClick(x, y) {
         return;
     }
 
-    // 2. 盤上の駒を選択中 -> 移動
+    // 2. 盤上の駒を選択している場合 -> 移動
     if (selectedCell && !selectedCell.isHand) {
+        // 同じマス -> 解除
         if (selectedCell.x === x && selectedCell.y === y) {
             selectedCell = null; render(); return;
         }
+        // 味方の駒 -> 選択切り替え
         if (target && target.owner === myColor) {
             selectedCell = { x, y }; render(); return;
         }
         
-        // 移動可能かチェック
+        // 移動実行
         const moves = getValidMoves(selectedCell.x, selectedCell.y);
         if (moves.some(m => m.x === x && m.y === y)) {
             tryMove(selectedCell.x, selectedCell.y, x, y);
@@ -302,13 +316,12 @@ function onCellClick(x, y) {
     }
 }
 
-// --- ロジック計算 (重要) ---
+// --- ルール計算ロジック ---
 
-// 指定した駒が移動できる座標リストを返す
 function getValidMoves(fx, fy) {
     const p = boardState[fy][fx];
     if (!p) return [];
-
+    
     const moves = [];
     const isBlack = p.owner === 'black';
     const forward = isBlack ? -1 : 1; // Y軸の進行方向
@@ -317,15 +330,14 @@ function getValidMoves(fx, fy) {
     const goldDirs = [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[0,1]];
     const silverDirs = [[-1,-1],[0,-1],[1,-1],[-1,1],[1,1]];
     const knightDirs = [[-1,-2],[1,-2]];
-
-    // 成り駒の動き変換
+    
     let type = p.type;
-    if (p.promoted) {
-        if (['P','L','N','S'].includes(type)) type = 'G'; // 金と同じ
-    }
+    // 成り駒の動き変換 (金と同じ動きになるもの)
+    if (p.promoted && ['P','L','N','S'].includes(type)) type = 'G';
 
-    // 1歩動く系
     let checkDirs = [];
+    
+    // 1歩移動系
     if (type === 'P') checkDirs = [[0,-1]];
     else if (type === 'S') checkDirs = silverDirs;
     else if (type === 'G') checkDirs = goldDirs;
@@ -333,7 +345,7 @@ function getValidMoves(fx, fy) {
 
     checkDirs.forEach(d => {
         const tx = fx + d[0];
-        const ty = fy + (d[1] * (isBlack ? 1 : -1)); // 白なら上下反転
+        const ty = fy + (d[1] * (isBlack ? 1 : -1));
         if (onBoard(tx, ty) && !isFriend(tx, ty, p.owner)) {
             moves.push({x: tx, y: ty});
         }
@@ -354,8 +366,8 @@ function getValidMoves(fx, fy) {
     if (['L', 'R', 'B'].includes(type) || (p.promoted && ['R','B'].includes(p.type))) {
         const slideDirs = [];
         if (type === 'L') slideDirs.push([0, -1]);
-        if (type === 'R') slideDirs.push([0,-1],[0,1],[-1,0],[1,0]);
-        if (type === 'B') slideDirs.push([-1,-1],[1,-1],[-1,1],[1,1]);
+        if (type === 'R') slideDirs.push([0,-1],[0,1],[-1,0],[1,0]); // 飛
+        if (type === 'B') slideDirs.push([-1,-1],[1,-1],[-1,1],[1,1]); // 角
 
         slideDirs.forEach(d => {
             let tx = fx;
@@ -364,19 +376,17 @@ function getValidMoves(fx, fy) {
             const dy = d[1] * (isBlack ? 1 : -1);
 
             while(true) {
-                tx += dx;
-                ty += dy;
+                tx += dx; ty += dy;
                 if (!onBoard(tx, ty)) break;
                 if (isFriend(tx, ty, p.owner)) break;
                 
                 moves.push({x: tx, y: ty});
-                
-                if (boardState[ty][tx] !== null) break; // 敵駒なら取って止まる
+                if (boardState[ty][tx]) break; // 敵駒で止まる
             }
         });
     }
 
-    // 龍・馬の追加1マス移動
+    // 龍・馬の追加1マス
     if (p.promoted) {
         let kingMoves = [];
         if (p.type === 'R') kingMoves = [[-1,-1],[1,-1],[-1,1],[1,1]]; // 斜め
@@ -386,7 +396,6 @@ function getValidMoves(fx, fy) {
             const tx = fx + d[0];
             const ty = fy + (d[1] * (isBlack ? 1 : -1));
             if (onBoard(tx, ty) && !isFriend(tx, ty, p.owner)) {
-                // 重複追加を防ぐ
                 if (!moves.some(m => m.x === tx && m.y === ty)) {
                     moves.push({x: tx, y: ty});
                 }
@@ -397,20 +406,18 @@ function getValidMoves(fx, fy) {
     return moves;
 }
 
-// 持ち駒が打てる場所を計算
 function getValidDrops(type) {
     const drops = [];
     const isBlack = myColor === 'black';
 
     for(let y=0; y<9; y++){
         for(let x=0; x<9; x++){
-            if(boardState[y][x]) continue; // 既に駒がある
+            if(boardState[y][x]) continue; // 空きマスのみ
 
-            // 禁止手チェック
-            // 1. 二歩
+            // ルール: 二歩
             if(type === 'P' && isNifu(x, myColor)) continue;
             
-            // 2. 行き所のない駒
+            // ルール: 行き所のない駒
             if(type === 'P' || type === 'L') {
                 if((isBlack && y===0) || (!isBlack && y===8)) continue;
             }
@@ -426,6 +433,7 @@ function getValidDrops(type) {
 
 function onBoard(x, y) { return x>=0 && x<9 && y>=0 && y<9; }
 function isFriend(x, y, color) { return boardState[y][x] && boardState[y][x].owner === color; }
+
 function isNifu(x, color) {
     for(let y=0; y<9; y++){
         const p = boardState[y][x];
@@ -435,12 +443,13 @@ function isNifu(x, color) {
 }
 
 // --- アクション実行 ---
+
 function tryMove(fx, fy, tx, ty) {
     const p = boardState[fy][fx];
     const isBlack = p.owner === 'black';
     const isPromotable = pieceDefs[p.type].canPro && !p.promoted;
     
-    // ゾーン判定
+    // ゾーンに入ったか、出たか
     const enter = isBlack ? ty <= 2 : ty >= 6;
     const leave = isBlack ? fy <= 2 : fy >= 6;
     
@@ -471,19 +480,22 @@ function executeMove(fx, fy, tx, ty, promote) {
     const p = boardState[fy][fx];
     const target = boardState[ty][tx];
     
-    // 王を取ったか判定（勝敗判定）
-    if (target && target.type === 'K') {
-        endGame(myColor); // 自分が勝った
-        // 通信相手には「取られた」事実を送ることで負けを判定させる
-    } else {
-        if (target) hands[myColor][target.type]++;
+    // 駒取り
+    if (target) {
+        if (target.type === 'K') {
+            // 王を取った -> 勝ち
+            endGame(myColor);
+        }
+        // 取った駒は成りを解除して持ち駒へ
+        hands[myColor][target.type]++;
     }
 
-    // 盤面更新
+    // 移動
     boardState[ty][tx] = { type: p.type, owner: p.owner, promoted: p.promoted || promote };
     boardState[fy][fx] = null;
     
-    finishTurn({ type: 'move', fx, fy, tx, ty, promote }, target && target.type === 'K');
+    const isWin = target && target.type === 'K';
+    finishTurn({ type: 'move', fx, fy, tx, ty, promote }, isWin);
 }
 
 function executeDrop(type, x, y) {
@@ -498,28 +510,26 @@ function finishTurn(data, isWin) {
     render();
 
     if (isWin) {
-        // 自分が勝った場合、ここで処理終了（モーダルはendGameで出てる）
-        sendData(data); // 最後の動きを送信
-        return;
+        sendData(data); // 勝ち決定打を送信
+    } else {
+        currentTurn = currentTurn === 'black' ? 'white' : 'black';
+        updateStatus();
+        sendData(data);
     }
-
-    currentTurn = currentTurn === 'black' ? 'white' : 'black';
-    updateStatus();
-    sendData(data);
 }
 
+// --- リモートからの受信処理 ---
 function handleRemoteMove(data) {
     const { fx, fy, tx, ty, promote } = data;
     const p = boardState[fy][fx];
     const target = boardState[ty][tx];
 
-    // 王が取られたかチェック
+    // 王が取られた判定
     if (target && target.type === 'K') {
-        // 相手のmoveで自分の王が消える -> 自分の負け
         boardState[ty][tx] = { type: p.type, owner: p.owner, promoted: p.promoted || promote };
         boardState[fy][fx] = null;
         render();
-        endGame(currentTurn); // 相手(currentTurn)の勝ち
+        endGame(currentTurn); // 相手の勝ち
         return;
     }
 
@@ -555,10 +565,10 @@ function endGame(winnerColor) {
     if (winnerColor === myColor) {
         title.innerText = "勝利！";
         title.style.color = "#d32f2f";
-        msg.innerText = "おめでとうございます。あなたの勝ちです。";
+        msg.innerText = "あなたの勝ちです";
     } else {
-        title.innerText = "敗北...";
+        title.innerText = "敗北";
         title.style.color = "#1976d2";
-        msg.innerText = "残念、あなたの負けです。";
+        msg.innerText = "あなたの負けです";
     }
 }
