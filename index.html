@@ -3,66 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>将棋 P2P 完全修正版</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <title>game</title>
+
 </head>
 <body>
-
-    <div id="login-screen">
-        <div class="login-box">
-            <h1>将棋 P2P</h1>
-            <p class="subtitle">完全ルール対応版</p>
-            <div class="input-group">
-                <label>部屋ID (4桁の数字)</label>
-                <input type="number" id="room-id" placeholder="1234" maxlength="4" pattern="\d*">
-            </div>
-            <div class="button-group">
-                <button onclick="startHosting()" class="btn btn-host">部屋を作る (先手)</button>
-                <button onclick="joinGame()" class="btn btn-join">参加する (後手)</button>
-            </div>
-            <div id="msg-log" class="log-area"></div>
-        </div>
-    </div>
-
-    <div id="game-screen" style="display: none;">
-        <div class="game-header">
-            <div id="player-info" class="info-badge">準備中...</div>
-            <div id="turn-indicator" class="turn-badge">待機中</div>
-            <button onclick="resetGame()" class="btn-reset">終了</button>
-        </div>
-        
-        <div class="komadai-wrapper">
-            <div id="komadai-opponent" class="komadai"></div>
-        </div>
-
-        <div id="board-container">
-            <div id="board"></div>
-        </div>
-
-        <div class="komadai-wrapper">
-            <div id="komadai-self" class="komadai"></div>
-        </div>
-    </div>
-
-    <div id="promote-modal" class="modal-overlay">
-        <div class="modal-box">
-            <h3>成りますか？</h3>
-            <div class="modal-actions">
-                <button id="btn-promote-yes" class="btn-modal yes">成る</button>
-                <button id="btn-promote-no" class="btn-modal no">成らない</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="result-modal" class="modal-overlay">
-        <div class="modal-box">
-            <h2 id="result-title"></h2>
-            <p id="result-message"></p>
-            <button onclick="resetGame()" class="btn-modal" style="background:#555; margin-top:15px;">トップへ戻る</button>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
+<a href="neon.html">NEONシューティングゲーム</a>
+    <a href="syougi.html">将棋ゲーム</a>
+  
 </body>
 </html>
+
