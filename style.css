@@ -3,12 +3,12 @@
     --board-color: #edc9a2;
     --line-color: #5c4033;
     --accent-color: #d4a373;
-    --highlight-select: rgba(255, 235, 59, 0.5);
-    --highlight-last: rgba(144, 202, 249, 0.5);
+    --highlight-select: rgba(255, 235, 59, 0.6);
+    --highlight-last: rgba(100, 181, 246, 0.6);
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Mincho", "MS PMincho", serif;
     margin: 0;
     padding: 0;
     background-color: var(--bg-color);
@@ -17,8 +17,8 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    overflow: hidden; /* スクロール禁止 */
-    user-select: none; /* テキスト選択禁止 */
+    overflow: hidden;
+    user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -53,12 +53,10 @@ input {
 .button-group { display: flex; flex-direction: column; gap: 15px; }
 .btn {
     padding: 15px; font-size: 18px; border: none; border-radius: 8px; 
-    color: white; font-weight: bold; cursor: pointer; transition: opacity 0.2s;
+    color: white; font-weight: bold; cursor: pointer;
 }
-.btn:active { opacity: 0.8; }
 .btn-host { background: #d4a373; }
 .btn-join { background: #6b8c42; }
-
 .log-area { margin-top: 15px; color: #d32f2f; font-size: 14px; min-height: 20px; }
 
 /* ゲーム画面 */
@@ -70,7 +68,6 @@ input {
     align-items: center;
     justify-content: space-evenly;
     padding: 10px 0;
-    box-sizing: border-box;
 }
 
 .game-header {
@@ -81,15 +78,17 @@ input {
     height: 40px;
 }
 
+.info-badge { font-weight: bold; color: #444; font-size: 14px; }
+
 .turn-badge {
     padding: 5px 15px;
-    background: #333;
-    color: white;
+    background: #ccc;
+    color: #555;
     border-radius: 20px;
     font-size: 14px;
     font-weight: bold;
 }
-.turn-badge.my-turn { background: #d32f2f; box-shadow: 0 0 10px rgba(211, 47, 47, 0.4); }
+.turn-badge.my-turn { background: #d32f2f; color: white; box-shadow: 0 0 8px rgba(211, 47, 47, 0.4); }
 
 .btn-reset {
     background: #999; color: white; border: none; padding: 5px 12px; border-radius: 4px;
@@ -97,9 +96,10 @@ input {
 
 /* 駒台 */
 .komadai-container {
-    width: 95vw;
-    max-width: 500px;
-    height: 60px;
+    width: 96vw;
+    max-width: 480px;
+    height: 12vw;
+    max-height: 50px;
     background: #eebb88;
     border-radius: 4px;
     display: flex;
@@ -112,6 +112,8 @@ input {
     flex-wrap: wrap;
     gap: 2px;
     width: 100%;
+    height: 100%;
+    align-items: center;
 }
 
 /* 盤面 */
@@ -145,13 +147,12 @@ input {
     cursor: pointer;
 }
 
-/* 選択とハイライト */
 .cell.selected { background: var(--highlight-select) !important; }
 .cell.last-move { background: var(--highlight-last) !important; }
 
 /* 駒 */
 .piece {
-    font-size: clamp(16px, 5.5vw, 32px);
+    font-size: clamp(14px, 5.5vw, 32px);
     font-weight: bold;
     line-height: 1;
     width: 100%;
@@ -159,39 +160,44 @@ input {
     display: flex;
     justify-content: center;
     align-items: center;
-    pointer-events: none; /* 駒自体をクリックしても親のcellが反応するように */
+    pointer-events: none; /* クリック判定を親要素へ */
 }
-.piece.black { color: #000; }
-.piece.white { color: #000; transform: rotate(180deg); }
-.piece.promoted { color: #d32f2f; }
+/* 先手(black)は通常、後手(white)は逆さま */
+.piece.black { color: #000; text-shadow: 0 1px 0 rgba(255,255,255,0.4); }
+.piece.white { color: #000; transform: rotate(180deg); text-shadow: 0 1px 0 rgba(255,255,255,0.4); }
+.piece.promoted { color: #d32f2f !important; }
 
-/* 駒台の駒 */
+/* 盤面回転時（自分が後手の場合）の補正 */
+.board-rotated { transform: rotate(180deg); }
+/* 盤が回っているので、後手駒(元々180度)は360度(正位置)に見える */
+.board-rotated .piece.white { transform: rotate(180deg); } 
+/* 盤が回っているので、先手駒(元々0度)は180度(逆さま)に見える */
+.board-rotated .piece.black { transform: rotate(0deg); } 
+
+/* 持ち駒 */
 .hand-piece {
-    width: 30px; height: 35px;
+    width: 30px; height: 100%;
     display: flex; justify-content: center; align-items: center;
-    background: transparent;
     position: relative;
     cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
 }
 .hand-piece.selected { background: var(--highlight-select); border-radius: 3px; }
 .count-badge {
-    position: absolute; bottom: -2px; right: -2px;
+    position: absolute; bottom: 0; right: 0;
     background: #333; color: white; font-size: 9px;
     padding: 1px 3px; border-radius: 3px;
+    line-height: 1;
 }
-
-/* 後手番の盤面回転 */
-.board-rotated { transform: rotate(180deg); }
-.board-rotated .piece.white { transform: rotate(180deg); } /* 元が180なので360(0)になる */
-.board-rotated .piece.black { transform: rotate(0deg); }   /* 元が0なので180になる(相手向き) */
 
 /* モーダル */
 .modal-overlay {
-    display: none;
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0,0,0,0.6);
-    z-index: 2000; /* 最前面 */
+    z-index: 2000;
+    display: none; /* 初期非表示 */
     justify-content: center;
     align-items: center;
 }
@@ -202,7 +208,6 @@ input {
     text-align: center;
     width: 80%;
     max-width: 300px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
 }
 .modal-actions {
     display: flex;
@@ -211,12 +216,7 @@ input {
     margin-top: 20px;
 }
 .btn-modal {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    font-size: 16px;
-    color: white;
-    cursor: pointer;
+    padding: 10px 25px; border: none; border-radius: 5px; font-size: 16px; color: white; cursor: pointer;
 }
 .yes { background: #d32f2f; }
 .no { background: #1976d2; }
