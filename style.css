@@ -1,181 +1,222 @@
+:root {
+    --bg-color: #f0e6d2;
+    --board-color: #edc9a2;
+    --line-color: #5c4033;
+    --accent-color: #d4a373;
+    --highlight-select: rgba(255, 235, 59, 0.5);
+    --highlight-last: rgba(144, 202, 249, 0.5);
+}
+
 body {
-    font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f0e6d2;
+    background-color: var(--bg-color);
+    height: 100vh;
+    width: 100vw;
     display: flex;
     flex-direction: column;
     align-items: center;
-    height: 100vh;
-    overflow: hidden; /* スクロール防止 */
+    overflow: hidden; /* スクロール禁止 */
+    user-select: none; /* テキスト選択禁止 */
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* ログイン画面 */
 #login-screen {
-    margin-top: 15vh;
-    text-align: center;
-    width: 90%;
-}
-.input-area { margin-bottom: 20px; }
-input {
-    font-size: 24px;
-    padding: 10px;
-    width: 120px;
-    text-align: center;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-}
-.button-area {
+    width: 100%;
+    height: 100%;
     display: flex;
-    flex-direction: column;
-    gap: 15px;
+    justify-content: center;
     align-items: center;
+    background: #fff8f0;
+    z-index: 10;
 }
-button {
-    font-size: 18px;
-    padding: 12px 30px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    width: 200px;
-    color: white;
+
+.login-box {
+    text-align: center;
+    width: 85%;
+    max-width: 400px;
+    padding: 30px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
 }
-.btn-host { background-color: #d4a373; }
-.btn-join { background-color: #6b8c42; }
-.btn-reset { 
-    background-color: #888; 
-    padding: 5px 10px; 
-    font-size: 14px; 
-    width: auto;
+
+.input-group { margin: 20px 0; }
+.input-group label { display: block; font-size: 14px; color: #666; margin-bottom: 5px; }
+input { 
+    font-size: 28px; padding: 10px; width: 100%; text-align: center; 
+    border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;
 }
+
+.button-group { display: flex; flex-direction: column; gap: 15px; }
+.btn {
+    padding: 15px; font-size: 18px; border: none; border-radius: 8px; 
+    color: white; font-weight: bold; cursor: pointer; transition: opacity 0.2s;
+}
+.btn:active { opacity: 0.8; }
+.btn-host { background: #d4a373; }
+.btn-join { background: #6b8c42; }
+
+.log-area { margin-top: 15px; color: #d32f2f; font-size: 14px; min-height: 20px; }
 
 /* ゲーム画面 */
 #game-screen {
     width: 100%;
-    max-width: 600px;
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    height: 100%;
-    padding-bottom: 20px;
+    justify-content: space-evenly;
+    padding: 10px 0;
+    box-sizing: border-box;
 }
 
-#header-info {
+.game-header {
     width: 95%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 5px;
+    height: 40px;
 }
 
-#status-display {
-    font-size: 16px;
+.turn-badge {
+    padding: 5px 15px;
+    background: #333;
+    color: white;
+    border-radius: 20px;
+    font-size: 14px;
     font-weight: bold;
+}
+.turn-badge.my-turn { background: #d32f2f; box-shadow: 0 0 10px rgba(211, 47, 47, 0.4); }
+
+.btn-reset {
+    background: #999; color: white; border: none; padding: 5px 12px; border-radius: 4px;
 }
 
 /* 駒台 */
-.komadai {
-    width: 95%;
-    height: 12vw; /* スマホ画面に合わせて可変 */
-    max-height: 60px;
-    background-color: #eebb88;
-    margin: 5px 0;
+.komadai-container {
+    width: 95vw;
+    max-width: 500px;
+    height: 60px;
+    background: #eebb88;
     border-radius: 4px;
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    padding: 2px;
-    box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
-    align-content: center;
+    padding: 0 5px;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+}
+.komadai {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    width: 100%;
 }
 
-/* 将棋盤コンテナ */
-#board-container {
+/* 盤面 */
+#board-wrapper {
+    width: 96vw;
+    height: 96vw;
+    max-width: 480px;
+    max-height: 480px;
+    background: var(--line-color);
     padding: 2px;
-    background-color: #5c4033;
     border-radius: 2px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
-/* 将棋盤 */
 #board {
+    width: 100%;
+    height: 100%;
     display: grid;
     grid-template-columns: repeat(9, 1fr);
     grid-template-rows: repeat(9, 1fr);
-    width: 95vw;
-    height: 95vw;
-    max-width: 500px;
-    max-height: 500px;
-    background-color: #eebb88;
-    box-sizing: border-box;
+    background: var(--board-color);
+    gap: 1px;
 }
 
 .cell {
-    border: 0.5px solid #8b6b4b;
+    background: var(--board-color);
     display: flex;
     justify-content: center;
     align-items: center;
-    cursor: pointer;
-    user-select: none;
     position: relative;
+    cursor: pointer;
 }
 
-/* 駒のデザイン */
+/* 選択とハイライト */
+.cell.selected { background: var(--highlight-select) !important; }
+.cell.last-move { background: var(--highlight-last) !important; }
+
+/* 駒 */
 .piece {
+    font-size: clamp(16px, 5.5vw, 32px);
+    font-weight: bold;
+    line-height: 1;
     width: 100%;
     height: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-weight: bold;
-    font-size: clamp(14px, 5vw, 30px);
-    line-height: 1;
+    pointer-events: none; /* 駒自体をクリックしても親のcellが反応するように */
 }
-.piece.black { color: #000; text-shadow: 0 1px 0 rgba(255,255,255,0.5); }
-.piece.white { color: #000; transform: rotate(180deg); text-shadow: 0 1px 0 rgba(255,255,255,0.5); }
-.piece.promoted { color: #d00; }
+.piece.black { color: #000; }
+.piece.white { color: #000; transform: rotate(180deg); }
+.piece.promoted { color: #d32f2f; }
 
-/* 状態ハイライト */
-.selected { background-color: rgba(255, 235, 59, 0.6); }
-.last-move { background-color: rgba(173, 216, 230, 0.6); }
+/* 駒台の駒 */
+.hand-piece {
+    width: 30px; height: 35px;
+    display: flex; justify-content: center; align-items: center;
+    background: transparent;
+    position: relative;
+    cursor: pointer;
+}
+.hand-piece.selected { background: var(--highlight-select); border-radius: 3px; }
+.count-badge {
+    position: absolute; bottom: -2px; right: -2px;
+    background: #333; color: white; font-size: 9px;
+    padding: 1px 3px; border-radius: 3px;
+}
 
-/* 盤面回転 */
+/* 後手番の盤面回転 */
 .board-rotated { transform: rotate(180deg); }
-/* 回転時の駒の向き補正はJSではなくCSSで制御 */
-.board-rotated .piece.white { transform: rotate(180deg); } 
-/* 盤が回っているので、後手駒(元々逆さま)は180+180=360で正位置に見える */
-.board-rotated .piece.black { transform: rotate(0deg); }
-/* 盤が回っているので、先手駒(元々正位置)は0+180=180で逆さまに見える(相手から見て) */
+.board-rotated .piece.white { transform: rotate(180deg); } /* 元が180なので360(0)になる */
+.board-rotated .piece.black { transform: rotate(0deg); }   /* 元が0なので180になる(相手向き) */
 
 /* モーダル */
-.modal {
+.modal-overlay {
     display: none;
     position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 100;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 2000; /* 最前面 */
     justify-content: center;
     align-items: center;
 }
-.modal-content {
-    background: #fff8f0;
+.modal-box {
+    background: #fff;
     padding: 25px;
-    border-radius: 10px;
+    border-radius: 12px;
     text-align: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    width: 80%;
+    max-width: 300px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
 }
-.modal-buttons {
-    margin-top: 15px;
+.modal-actions {
     display: flex;
-    gap: 10px;
     justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
 }
-.modal-buttons button {
-    width: 100px;
+.btn-modal {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
     font-size: 16px;
-    padding: 8px;
     color: white;
+    cursor: pointer;
 }
-.modal-buttons button:first-child { background: #d32f2f; }
-.modal-buttons button:last-child { background: #1976d2; }
+.yes { background: #d32f2f; }
+.no { background: #1976d2; }
