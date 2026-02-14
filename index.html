@@ -4,13 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>game</title>
+    <style>
+        /* 全体の背景と配置の設定 */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a2e; /* 落ち着いたダークネイビー */
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            gap: 20px; /* ボタン同士の間隔 */
+        }
 
+        /* リンクをボタン化するスタイル */
+        a {
+            display: inline-block;
+            width: 250px;
+            padding: 15px 25px;
+            text-decoration: none;
+            color: #ffffff;
+            background: linear-gradient(135deg, #6e8efb, #a777e3); /* グラデーション */
+            border-radius: 50px; /* 丸みのあるボタン */
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease; /* アニメーションの設定 */
+        }
+
+        /* マウスを乗せた時の動き */
+        a:hover {
+            transform: translateY(-3px); /* 少し浮き上がる */
+            box-shadow: 0 6px 20px rgba(110, 142, 251, 0.4);
+            filter: brightness(1.1);
+        }
+
+        /* クリックした瞬間の動き */
+        a:active {
+            transform: translateY(1px);
+        }
+    </style>
 </head>
 <body>
-<a href="neon.html">NEONシューティングゲーム</a>
-<a href="syougi.html">将棋ゲーム</a>
+
+    <a href="neon.html">NEONシューティング</a>
+    <a href="syougi.html">将棋ゲーム</a>
   
 </body>
 </html>
-
-
