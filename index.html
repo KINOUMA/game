@@ -3,47 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>将棋 P2P</title>
+    <title>将棋 P2P 完全版</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 </head>
 <body>
 
     <div id="login-screen">
-        <h1>将棋 P2P</h1>
-        <p>GitHub Pages版</p>
-        <div class="input-area">
-            <p>4桁のIDを決めてください</p>
-            <input type="number" id="room-id" placeholder="1234" maxlength="4">
+        <div class="login-box">
+            <h1>将棋 P2P</h1>
+            <p class="subtitle">完全対人戦・ブラウザ版</p>
+            
+            <div class="input-group">
+                <label>部屋ID (4桁の数字)</label>
+                <input type="number" id="room-id" placeholder="1234" maxlength="4" pattern="\d*">
+            </div>
+
+            <div class="button-group">
+                <button onclick="startHosting()" class="btn btn-host">部屋を作る (先手)</button>
+                <button onclick="joinGame()" class="btn btn-join">参加する (後手)</button>
+            </div>
+            
+            <div id="msg-log" class="log-area"></div>
         </div>
-        <div class="button-area">
-            <button onclick="startHosting()" class="btn-host">部屋を作る (先)</button>
-            <button onclick="joinGame()" class="btn-join">参加する (後)</button>
-        </div>
-        <p id="msg-log" style="color: red; margin-top: 10px;"></p>
     </div>
 
     <div id="game-screen" style="display: none;">
-        <div id="header-info">
-            <div id="status-display">待機中...</div>
-            <button onclick="location.reload()" class="btn-reset">終了</button>
+        <div class="game-header">
+            <div id="turn-indicator" class="turn-badge">待機中</div>
+            <button onclick="resetGame()" class="btn-reset">終了</button>
         </div>
         
-        <div id="komadai-white" class="komadai"></div>
+        <div class="komadai-container">
+            <div id="komadai-white" class="komadai"></div>
+        </div>
 
-        <div id="board-container">
+        <div id="board-wrapper">
             <div id="board"></div>
         </div>
 
-        <div id="komadai-black" class="komadai"></div>
+        <div class="komadai-container">
+            <div id="komadai-black" class="komadai"></div>
+        </div>
     </div>
 
-    <div id="promote-modal" class="modal">
-        <div class="modal-content">
-            <p>成りますか？</p>
-            <div class="modal-buttons">
-                <button onclick="resolvePromotion(true)">成る</button>
-                <button onclick="resolvePromotion(false)">成らない</button>
+    <div id="promote-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h3>成りますか？</h3>
+            <p>成ると駒が強力になります。</p>
+            <div class="modal-actions">
+                <button id="btn-promote-yes" class="btn-modal yes">成る</button>
+                <button id="btn-promote-no" class="btn-modal no">成らない</button>
             </div>
         </div>
     </div>
