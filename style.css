@@ -1,31 +1,28 @@
 :root {
     --bg-color: #f0e6d2;
-    --board-color: #edc9a2;
+    --board-bg: #edc9a2;
     --line-color: #5c4033;
-    --select-color: rgba(255, 235, 59, 0.5);
-    --last-move-color: rgba(144, 202, 249, 0.5);
-    --guide-color: rgba(255, 0, 0, 0.3);
+    --select-color: rgba(255, 235, 59, 0.6);
+    --valid-move-color: rgba(255, 0, 0, 0.3);
+    --valid-drop-color: rgba(0, 128, 0, 0.3);
+    --last-move-color: rgba(100, 181, 246, 0.5);
 }
 
 body {
-    font-family: "Hiragino Kaku Gothic ProN", sans-serif;
-    margin: 0;
-    padding: 0;
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Mincho", serif;
+    margin: 0; padding: 0;
     background-color: var(--bg-color);
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    overflow: hidden;
-    user-select: none;
+    height: 100vh; width: 100vw;
+    display: flex; flex-direction: column; align-items: center;
+    overflow: hidden; user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
 
 /* ログイン画面 */
 #login-screen {
-    width: 100%; height: 100%; position: absolute; top:0; left:0;
-    display: flex; justify-content: center; align-items: center;
+    position: absolute; top:0; left:0; width:100%; height:100%;
     background: #fff8f0; z-index: 100;
+    display: flex; justify-content: center; align-items: center;
 }
 .login-box {
     text-align: center; width: 85%; max-width: 400px;
@@ -34,8 +31,8 @@ body {
 }
 .input-group { margin: 20px 0; }
 input { 
-    font-size: 28px; padding: 10px; width: 100%; text-align: center; 
-    border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;
+    font-size: 24px; padding: 10px; width: 100%; text-align: center; 
+    border: 2px solid #ddd; border-radius: 8px;
 }
 .button-group { display: flex; flex-direction: column; gap: 15px; }
 .btn {
@@ -44,25 +41,28 @@ input {
 }
 .btn-host { background: #d4a373; }
 .btn-join { background: #6b8c42; }
-.log-area { margin-top: 15px; color: #d32f2f; min-height: 20px; }
+.log-area { margin-top: 15px; color: #d32f2f; min-height: 20px; font-size: 14px; }
 
-/* ゲーム画面 */
+/* ゲーム画面レイアウト */
 #game-screen {
     width: 100%; height: 100%;
     display: flex; flex-direction: column;
-    align-items: center; justify-content: space-evenly;
+    justify-content: space-evenly; align-items: center;
 }
 
 .game-header {
     width: 95%; display: flex; justify-content: space-between; align-items: center; height: 40px;
 }
 .turn-badge {
-    padding: 5px 15px; background: #ccc; color: #555; border-radius: 20px; font-weight: bold;
+    padding: 5px 15px; background: #ccc; color: #555;
+    border-radius: 20px; font-size: 14px; font-weight: bold;
 }
 .turn-badge.my-turn { background: #d32f2f; color: white; }
+.info-badge { font-weight: bold; color: #444; font-size: 14px; }
+.btn-reset { background: #777; color: white; border: none; padding: 5px 10px; border-radius: 4px; }
 
 /* 盤面 */
-#board-wrapper {
+#board-container {
     width: 96vw; height: 96vw;
     max-width: 480px; max-height: 480px;
     background: var(--line-color);
@@ -74,67 +74,67 @@ input {
     display: grid;
     grid-template-columns: repeat(9, 1fr);
     grid-template-rows: repeat(9, 1fr);
-    background: var(--board-color);
+    background: var(--board-bg);
     gap: 1px;
 }
 .cell {
-    background: var(--board-color);
+    background: var(--board-bg);
     display: flex; justify-content: center; align-items: center;
     position: relative; cursor: pointer;
 }
 
-/* 視覚ガイド（ドット表示） */
-.cell.valid-move::after {
-    content: '';
-    position: absolute;
-    width: 20%; height: 20%;
-    background-color: rgba(255, 0, 0, 0.4);
-    border-radius: 50%;
-    pointer-events: none; /* クリックを邪魔しない */
-}
-/* 持ち駒を打てる場所のガイド */
-.cell.valid-drop {
-    background-color: rgba(0, 255, 0, 0.15) !important;
-}
-
+/* ガイド表示 */
 .cell.selected { background: var(--select-color) !important; }
 .cell.last-move { background: var(--last-move-color) !important; }
+.cell.valid-move::after {
+    content: ''; position: absolute;
+    width: 25%; height: 25%;
+    background: var(--valid-move-color);
+    border-radius: 50%; pointer-events: none;
+}
+.cell.valid-drop {
+    background: var(--valid-drop-color) !important;
+}
 
 /* 駒 */
 .piece {
-    font-size: clamp(14px, 5.5vw, 32px); font-weight: bold;
-    width: 100%; height: 100%;
+    font-size: clamp(14px, 5.5vw, 30px);
+    font-weight: bold; width: 100%; height: 100%;
     display: flex; justify-content: center; align-items: center;
-    pointer-events: none; /* これが重要：クリック判定をcellに委譲 */
+    pointer-events: none; /* 重要: クリック判定をcellに通す */
     z-index: 2;
 }
 .piece.black { color: #000; }
 .piece.white { color: #000; transform: rotate(180deg); }
 .piece.promoted { color: #d32f2f !important; }
 
-/* 後手番の回転 */
-.board-rotated { transform: rotate(180deg); }
-.board-rotated .piece.white { transform: rotate(180deg); } 
-.board-rotated .piece.black { transform: rotate(0deg); } 
-
-/* 持ち駒台 */
-.komadai-container {
-    width: 96vw; max-width: 480px; height: 12vw; max-height: 50px;
-    background: #eebb88; display: flex; align-items: center; padding: 0 5px;
+/* 持ち駒 */
+.komadai-wrapper {
+    width: 96vw; max-width: 480px;
+    height: 12vw; max-height: 50px;
+    background: #eebb88;
+    display: flex; align-items: center;
+    border-radius: 4px; padding: 0 5px; box-sizing: border-box;
 }
-.komadai { display: flex; width: 100%; height: 100%; align-items: center; }
-
-.hand-piece {
-    width: 35px; height: 100%;
+.komadai {
+    display: flex; width: 100%; height: 100%; align-items: center; gap: 2px;
+}
+.hand-slot {
+    width: 40px; height: 100%;
     display: flex; justify-content: center; align-items: center;
-    position: relative; cursor: pointer; font-weight: bold; font-size: 18px;
+    position: relative; cursor: pointer;
 }
-.hand-piece.selected { background: var(--select-color); border-radius: 4px; }
+.hand-slot.selected { background: var(--select-color); border-radius: 4px; }
 .count-badge {
-    position: absolute; bottom: 0; right: 0;
+    position: absolute; bottom: 2px; right: 2px;
     background: #333; color: white; font-size: 10px;
     padding: 1px 4px; border-radius: 4px;
 }
+
+/* 盤面回転 */
+.board-rotated { transform: rotate(180deg); }
+.board-rotated .piece.white { transform: rotate(180deg); }
+.board-rotated .piece.black { transform: rotate(0deg); }
 
 /* モーダル */
 .modal-overlay {
@@ -147,8 +147,6 @@ input {
     text-align: center; width: 80%; max-width: 300px;
 }
 .modal-actions { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
-.btn-modal {
-    padding: 10px 25px; border: none; border-radius: 5px; color: white; cursor: pointer;
-}
+.btn-modal { padding: 10px 25px; border: none; border-radius: 5px; color: white; cursor: pointer; }
 .yes { background: #d32f2f; }
 .no { background: #1976d2; }
