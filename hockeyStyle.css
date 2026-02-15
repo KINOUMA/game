@@ -1,1 +1,111 @@
+:root {
+    --bg-color: #121212;
+    --table-color: #1e1e2e;
+    --line-color: #333;
+    --my-color: #4db6ac;
+    --opp-color: #ff5252;
+    --text-color: #fff;
+}
 
+body {
+    margin: 0; padding: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    height: 100vh; width: 100vw;
+    overflow: hidden; /* スクロール完全禁止 */
+    touch-action: none; /* ピンチイン等禁止 */
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+
+/* ログイン画面 */
+#login-screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    display: flex; justify-content: center; align-items: center; z-index: 100;
+}
+.login-box {
+    text-align: center; width: 80%; max-width: 320px;
+    padding: 30px; background: rgba(255,255,255,0.05);
+    border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+}
+h1 { margin: 0; font-style: italic; letter-spacing: 2px; text-shadow: 0 0 15px cyan; }
+.subtitle { color: #888; margin-bottom: 20px; font-size: 14px; }
+input {
+    font-size: 28px; padding: 10px; width: 100%; text-align: center;
+    border: none; border-radius: 10px; margin: 10px 0 20px 0; outline: none;
+    background: #fff; color: #333;
+}
+.btn {
+    width: 100%; padding: 15px; font-size: 16px; border: none; border-radius: 10px;
+    color: white; font-weight: bold; cursor: pointer; margin-bottom: 10px;
+}
+.btn-host { background: #0f3460; }
+.btn-join { background: #e94560; }
+.log-area { color: #ffd700; font-size: 13px; min-height: 20px; margin-top: 10px; }
+
+/* ゲーム画面レイアウト (縦配置) */
+#game-screen {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 10px 0; box-sizing: border-box;
+}
+
+.score-area {
+    display: flex; justify-content: space-between; align-items: center;
+    width: 90%; margin: 0 auto; height: 50px;
+}
+.score-area.opponent { color: var(--opp-color); border-bottom: 1px solid #333; }
+.score-area.self { color: var(--my-color); border-top: 1px solid #333; }
+.label { font-size: 12px; font-weight: bold; opacity: 0.7; }
+.score-num { font-size: 36px; font-weight: bold; font-family: monospace; }
+
+.canvas-wrapper {
+    position: relative;
+    flex-grow: 1; /* 残りのスペースを埋める */
+    width: 95%; margin: 5px auto;
+    display: flex; justify-content: center; align-items: center;
+}
+
+#gameCanvas {
+    background: var(--table-color);
+    border: 2px solid #444;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    touch-action: none;
+}
+
+#timer-display {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 60px;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.1);
+    pointer-events: none; /* ゲームの邪魔にならないように */
+    font-family: monospace;
+    z-index: 5;
+}
+
+.btn-quit {
+    position: absolute; bottom: 15px; left: 15px;
+    background: transparent; border: 1px solid #444; color: #666;
+    padding: 5px 10px; font-size: 10px; border-radius: 4px;
+}
+
+/* モーダル */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9); z-index: 2000;
+    display: none; justify-content: center; align-items: center;
+}
+.modal-box {
+    background: #222; padding: 40px; border-radius: 15px;
+    text-align: center; border: 1px solid #444; width: 80%;
+}
+#result-title { font-size: 40px; margin: 0; font-style: italic; }
+.final-score { font-size: 50px; font-weight: bold; margin: 20px 0; color: #fff; }
+.btn-modal {
+    padding: 12px 30px; background: cyan; border: none; border-radius: 25px;
+    font-weight: bold; font-size: 16px; margin-top: 20px; cursor: pointer; color: #000;
+}
