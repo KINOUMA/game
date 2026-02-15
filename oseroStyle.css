@@ -1,1 +1,164 @@
 
+:root {
+    --bg-color: #263238;
+    --board-color: #2e7d32;
+    --line-color: #1b5e20;
+    --text-color: #ffffff;
+    --accent-color: #ffeb3b;
+}
+
+body {
+    font-family: "Hiragino Kaku Gothic ProN", sans-serif;
+    margin: 0; padding: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    height: 100vh; width: 100vw;
+    display: flex; flex-direction: column; align-items: center;
+    overflow: hidden; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ログイン画面 */
+#login-screen {
+    position: absolute; top:0; left:0; width:100%; height:100%;
+    background: #eceff1; z-index: 100;
+    display: flex; justify-content: center; align-items: center;
+    color: #333;
+}
+.login-box {
+    text-align: center; width: 85%; max-width: 400px;
+    padding: 30px; background: white; border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+.input-group { margin: 20px 0; }
+input { 
+    font-size: 24px; padding: 10px; width: 100%; text-align: center; 
+    border: 2px solid #ddd; border-radius: 8px;
+}
+.button-group { display: flex; flex-direction: column; gap: 15px; }
+.btn {
+    padding: 15px; font-size: 18px; border: none; border-radius: 8px; 
+    color: white; font-weight: bold; cursor: pointer;
+}
+.btn-host { background: #333; }
+.btn-join { background: #1976d2; }
+.log-area { margin-top: 15px; color: #d32f2f; min-height: 20px; font-size: 14px; }
+
+/* ゲーム画面 */
+#game-screen {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-start;
+    padding-top: 20px; box-sizing: border-box;
+}
+
+.header-info {
+    width: 90%; max-width: 500px;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px;
+}
+.badge {
+    background: #455a64; padding: 5px 15px; border-radius: 20px; font-size: 14px;
+}
+.btn-reset {
+    background: #546e7a; color: white; border: none; padding: 5px 12px; border-radius: 5px;
+}
+
+/* スコアボード */
+.score-board {
+    display: flex; justify-content: space-between; align-items: center;
+    width: 90%; max-width: 450px;
+    background: #37474f; padding: 10px 20px; border-radius: 50px;
+    margin-bottom: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.score-box {
+    display: flex; align-items: center; gap: 10px;
+    opacity: 0.5; transition: opacity 0.3s;
+}
+.score-box.active { opacity: 1; font-weight: bold; }
+
+.disc-icon {
+    width: 24px; height: 24px; border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+.disc-icon.black { background: #000; }
+.disc-icon.white { background: #fff; }
+
+.score-box span { font-size: 24px; font-weight: bold; }
+.status-msg { font-size: 14px; color: #cfd8dc; }
+
+/* 盤面 */
+#board-container {
+    width: 90vw; height: 90vw;
+    max-width: 500px; max-height: 500px;
+    background: #111; padding: 5px; border-radius: 4px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+#board {
+    width: 100%; height: 100%;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    background: var(--line-color);
+    gap: 2px;
+    border: 2px solid var(--line-color);
+}
+.cell {
+    background: var(--board-color);
+    display: flex; justify-content: center; align-items: center;
+    position: relative; cursor: pointer;
+}
+
+/* 石のデザイン */
+.disc {
+    width: 80%; height: 80%;
+    border-radius: 50%;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    transition: transform 0.3s ease-in-out;
+}
+.disc.black {
+    background: radial-gradient(circle at 30% 30%, #444, #000);
+}
+.disc.white {
+    background: radial-gradient(circle at 30% 30%, #fff, #ddd);
+}
+
+/* ガイドとハイライト */
+.cell.valid::after {
+    content: ''; position: absolute;
+    width: 30%; height: 30%;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 50%; pointer-events: none;
+}
+/* 自分が白番ならガイドは白っぽく */
+.cell.valid.white-guide::after {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.cell.last-move {
+    background: #388e3c; /* 少し明るい緑 */
+}
+/* 直前に置いた石にマーク */
+.disc.new::after {
+    content: ''; position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 20%; height: 20%;
+    background: var(--accent-color);
+    border-radius: 50%;
+}
+
+/* モーダル */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); z-index: 2000;
+    display: none; justify-content: center; align-items: center;
+}
+.modal-box {
+    background: #fff; padding: 30px; border-radius: 12px;
+    text-align: center; color: #333; width: 80%; max-width: 300px;
+}
+#result-score { font-size: 24px; font-weight: bold; margin: 10px 0; }
+.btn-modal {
+    padding: 10px 25px; border: none; border-radius: 5px;
+    background: #333; color: white; cursor: pointer; margin-top: 15px;
+}
