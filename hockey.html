@@ -1,1 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Air Hockey Mobile</title>
+    <link rel="stylesheet" href="hockeyStyle.css">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body>
 
+    <div id="login-screen">
+        <div class="login-box">
+            <h1>AIR HOCKEY</h1>
+            <p class="subtitle">Mobile Battle</p>
+            <div class="input-group">
+                <label>ROOM ID (4桁)</label>
+                <input type="number" id="room-id" placeholder="1234" maxlength="4" pattern="\d*">
+            </div>
+            <div class="button-group">
+                <button onclick="startHosting()" class="btn btn-host">部屋を作る (Host)</button>
+                <button onclick="joinGame()" class="btn btn-join">参加する (Guest)</button>
+            </div>
+            <p id="msg-log" class="log-area">IDを入力してください</p>
+        </div>
+    </div>
+
+    <div id="game-screen" style="display: none;">
+        <div class="score-area opponent">
+            <span class="label">OPPONENT</span>
+            <span id="score-opponent" class="score-num">0</span>
+        </div>
+
+        <div class="canvas-wrapper">
+            <div id="timer-display">03:00</div>
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        
+        <div class="score-area self">
+            <span class="label">YOU</span>
+            <span id="score-self" class="score-num">0</span>
+        </div>
+
+        <button onclick="location.reload()" class="btn-quit">QUIT</button>
+    </div>
+
+    <div id="result-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h2 id="result-title">FINISH!</h2>
+            <div class="final-score">
+                <span id="final-score-text">0 - 0</span>
+            </div>
+            <p id="result-message"></p>
+            <button onclick="location.reload()" class="btn-modal">タイトルへ</button>
+        </div>
+    </div>
+
+    <script src="hockeyScript.js"></script>
+</body>
+</html>
