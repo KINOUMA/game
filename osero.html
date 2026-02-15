@@ -1,1 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>オンライン オセロ</title>
+    <link rel="stylesheet" href="oseroStyle.css">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body>
 
+    <div id="login-screen">
+        <div class="login-box">
+            <h1>OTHELLO P2P</h1>
+            <p class="subtitle">完全リアルタイム対戦</p>
+            <div class="input-group">
+                <label>部屋ID (4桁の数字)</label>
+                <input type="number" id="room-id" placeholder="1234" maxlength="4" pattern="\d*">
+            </div>
+            <div class="button-group">
+                <button onclick="startHosting()" class="btn btn-host">部屋を作る (黒)</button>
+                <button onclick="joinGame()" class="btn btn-join">参加する (白)</button>
+            </div>
+            <div id="msg-log" class="log-area"></div>
+        </div>
+    </div>
+
+    <div id="game-screen" style="display: none;">
+        <div class="header-info">
+            <div id="player-role" class="badge">準備中</div>
+            <button onclick="location.reload()" class="btn-reset">終了</button>
+        </div>
+
+        <div class="score-board">
+            <div class="score-box black active" id="score-box-black">
+                <div class="disc-icon black"></div>
+                <span id="score-black">2</span>
+            </div>
+            <div class="status-msg" id="status-display">黒の番です</div>
+            <div class="score-box white" id="score-box-white">
+                <div class="disc-icon white"></div>
+                <span id="score-white">2</span>
+            </div>
+        </div>
+
+        <div id="board-container">
+            <div id="board"></div>
+        </div>
+    </div>
+
+    <div id="result-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h2 id="result-title">ゲーム終了</h2>
+            <p id="result-score"></p>
+            <p id="result-message"></p>
+            <button onclick="location.reload()" class="btn-modal">トップへ戻る</button>
+        </div>
+    </div>
+
+    <script src="oseroScript.js"></script>
+</body>
+</html>
